@@ -1,3 +1,8 @@
+"use client";
+
+import Link from "next/link";
+import { useRef, useState } from "react";
+
 type Category = {
   id: string;
   name: string;
@@ -10,6 +15,13 @@ export default function CategoryCarousel({
 }: {
   categories: Category[];
 }) {
+  const maskRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const startX = useRef(0);
+  const startScrollLeft = useRef(0);
+  const hasDragged = useRef(false);
+
   const safeCategories =
     categories && categories.length > 0
       ? categories
@@ -28,17 +40,66 @@ export default function CategoryCarousel({
           },
         ];
 
-  const looped = [...safeCategories, ...safeCategories];
+  const looped = [
+    ...safeCategories,
+    ...safeCategories,
+    ...safeCategories,
+    ...safeCategories,
+    ...safeCategories,
+    ...safeCategories,
+  ];
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!maskRef.current) return;
+
+    setIsDragging(true);
+    hasDragged.current = false;
+    startX.current = e.clientX;
+    startScrollLeft.current = maskRef.current.scrollLeft;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !maskRef.current) return;
+
+    const movedBy = e.clientX - startX.current;
+
+    if (Math.abs(movedBy) > 8) {
+      hasDragged.current = true;
+    }
+
+    maskRef.current.scrollLeft = startScrollLeft.current - movedBy;
+  };
+
+  const stopDragging = () => {
+    setIsDragging(false);
+  };
+
+  const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (hasDragged.current) {
+      e.preventDefault();
+      hasDragged.current = false;
+    }
+  };
 
   return (
     <div className="um-carousel-shell">
-      <div className="um-carousel-mask">
+      <div
+        ref={maskRef}
+        className={`um-carousel-mask ${isDragging ? "is-dragging" : ""}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={stopDragging}
+        onPointerCancel={stopDragging}
+        onPointerLeave={stopDragging}
+      >
         <div className="um-carousel-track">
           {looped.map((category, index) => (
-            <a
+            <Link
               key={`${category.id}-${index}`}
               href={`/category/${category.slug}`}
               className="um-carousel-card"
+              draggable={false}
+              onClick={handleCardClick}
             >
               <div className="um-carousel-image-wrap">
                 <img
@@ -48,6 +109,7 @@ export default function CategoryCarousel({
                   }
                   alt={category.name}
                   className="um-carousel-image"
+                  draggable={false}
                 />
               </div>
 
@@ -55,7 +117,7 @@ export default function CategoryCarousel({
                 <h3 className="um-carousel-title">{category.name}</h3>
                 <p className="um-carousel-price">Explore category</p>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

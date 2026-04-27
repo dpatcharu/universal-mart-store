@@ -4,7 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import CategoryCarousel from "@/components/CategoryCarousel";
-import ShoppingAssistantPanel from "@/components/ShoppingAssistantPanel";
+import ProductSearchBox from "@/components/ProductSearchBox";
 
 type Product = {
   id: string;
@@ -43,21 +43,10 @@ type SitePage = {
   section_2_title?: string | null;
   section_2_body?: string | null;
   section_3_title?: string | null;
-  section_3_body?: string | null;
-  assistant_badge?: string | null;
-  assistant_title?: string | null;
-  assistant_body?: string | null;
-  assistant_categories_label?: string | null;
-  assistant_products_label?: string | null;
-  assistant_cta_1_text?: string | null;
-  assistant_cta_1_link?: string | null;
-  assistant_cta_2_text?: string | null;
-  assistant_cta_2_link?: string | null;
-  assistant_icon_url?: string | null;
 };
 
 export default async function Home() {
-  const supabase =  await createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: homePage } = await supabase
     .from("site_pages")
@@ -81,34 +70,26 @@ export default async function Home() {
       section_2_title,
       section_2_body,
       section_3_title,
-      section_3_body,
-      assistant_badge,
-      assistant_title,
-      assistant_body,
-      assistant_categories_label,
-      assistant_products_label,
-      assistant_cta_1_text,
-      assistant_cta_1_link,
-      assistant_cta_2_text,
-      assistant_cta_2_link,
-      assistant_icon_url
+      section_3_body
     `)
     .eq("page_key", "home")
     .maybeSingle<SitePage>();
 
   const { data: featuredProducts } = await supabase
     .from("products")
-    .select("id, slug, product_name, price, main_image_url, affiliate_link, is_featured")
+    .select(
+      "id, slug, product_name, price, main_image_url, affiliate_link, is_featured"
+    )
     .eq("is_active", true)
     .eq("is_featured", true)
     .limit(4);
 
-  const { data: suggestedProducts } = await supabase
+  const { data: searchableProducts } = await supabase
     .from("products")
-    .select("id, slug, product_name")
+    .select("id, slug, product_name, price, main_image_url")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(100);
 
   const { data: categories } = await supabase
     .from("categories")
@@ -117,73 +98,73 @@ export default async function Home() {
     .order("name", { ascending: true });
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#fffefb_0%,#f6f3ee_45%,#ffffff_100%)] text-slate-900">
+    <main className="min-h-screen overflow-x-hidden bg-[#f5f5f7] text-slate-950">
       <PublicHeader />
 
-      <section className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-16">
-        <div className="grid gap-10 overflow-hidden md:grid-cols-2 md:items-center">
-          <div className="min-w-0 max-w-2xl overflow-hidden">
-            <div className="inline-flex max-w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-600 shadow-sm md:text-sm">
-              <span className="truncate">
-                {homePage?.subtitle}
-              </span>
-            </div>
+      <section className="relative overflow-visible border-b border-slate-200 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.14),transparent_34%),linear-gradient(180deg,#ffffff_0%,#f5f5f7_100%)]">
+        <div className="mx-auto max-w-7xl px-4 py-14 text-center md:px-6 md:py-16">
+          <div className="mx-auto max-w-4xl">
+            {homePage?.subtitle && (
+              <div className="inline-flex max-w-full rounded-full border border-orange-200 bg-white/90 px-5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600 shadow-sm">
+                <span className="truncate">{homePage.subtitle}</span>
+              </div>
+            )}
 
-            <h1 className="mt-5 max-w-full break-words text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl md:text-6xl">
+            <h1 className="mt-6 break-words text-4xl font-black leading-[1.05] tracking-tight text-slate-950 sm:text-5xl md:text-5xl">
               {homePage?.title}
             </h1>
 
-            <p className="mt-5 max-w-full break-words text-base leading-7 text-slate-600 md:text-lg">
-              {homePage?.content}
-            </p>
-
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href={homePage?.cta_1_link || "/shop"}
-                className="rounded-2xl bg-black px-6 py-3 text-center text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                {homePage?.cta_1_text}
-              </Link>
-
-              <Link
-                href={homePage?.cta_2_link || "/about"}
-                className="rounded-2xl border border-slate-300 bg-white px-6 py-3 text-center text-sm font-medium text-slate-800 transition hover:bg-slate-50"
-              >
-                {homePage?.cta_2_text}
-              </Link>
-            </div>
-
-            <div className="mt-7 max-w-full">
-              <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
-                <input
-                  type="text"
-                  placeholder={homePage?.search_placeholder || ""}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                <Link
-                  href="/shop"
-                  className="w-full rounded-2xl bg-black px-5 py-3 text-center text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                  Search
-                </Link>
-              </div>
-            </div>
-
-            <div className="mt-7 min-w-0">
-              <p className="mb-3 text-sm uppercase tracking-[0.25em] text-slate-400">
-                Shop by Category
+            {homePage?.content && (
+              <p className="mx-auto mt-6 max-w-2xl break-words text-base leading-8 text-slate-600 md:text-lg">
+                {homePage.content}
               </p>
+            )}
 
-              <CategoryCarousel categories={categories || []} />
+            <ProductSearchBox
+              products={searchableProducts || []}
+              placeholder={homePage?.search_placeholder}
+            />
+
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              {homePage?.cta_1_text && (
+                <Link
+                  href={homePage?.cta_1_link || "/shop"}
+                  className="rounded-full bg-slate-950 px-7 py-4 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  {homePage.cta_1_text}
+                </Link>
+              )}
+
+              {homePage?.cta_2_text && (
+                <Link
+                  href={homePage?.cta_2_link || "/about"}
+                  className="rounded-full border border-slate-300 bg-white px-7 py-4 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  {homePage.cta_2_text}
+                </Link>
+              )}
             </div>
           </div>
-
-          <ShoppingAssistantPanel
-            categories={categories || []}
-            suggestedProducts={suggestedProducts || []}
-            content={homePage}
-          />
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-12 md:px-6">
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-500">
+              Shop by Category
+            </p>
+          </div>
+
+          <Link
+            href="/shop"
+            className="hidden text-sm font-bold text-orange-600 hover:text-orange-700 sm:block"
+          >
+            View all
+          </Link>
+        </div>
+
+        <CategoryCarousel categories={categories || []} />
       </section>
 
       <section
@@ -192,20 +173,25 @@ export default async function Home() {
       >
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
-              {homePage?.featured_badge}
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight md:text-5xl">
+            {homePage?.featured_badge && (
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-500">
+                {homePage.featured_badge}
+              </p>
+            )}
+
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
               {homePage?.featured_title}
             </h2>
           </div>
 
-          <Link
-            href={homePage?.featured_cta_link || "/shop"}
-            className="text-sm font-medium text-slate-700 hover:text-slate-900"
-          >
-            {homePage?.featured_cta_text}
-          </Link>
+          {homePage?.featured_cta_text && (
+            <Link
+              href={homePage?.featured_cta_link || "/shop"}
+              className="text-sm font-bold text-orange-600 hover:text-orange-700"
+            >
+              {homePage.featured_cta_text}
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
@@ -215,34 +201,41 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(246,244,238,0.84))]">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 md:grid-cols-3 md:px-6 md:py-14">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-semibold">
-              {homePage?.section_1_title}
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {homePage?.section_1_body}
-            </p>
-          </div>
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-14 md:grid-cols-3 md:px-6">
+          {[
+            {
+              title: homePage?.section_1_title,
+              body: homePage?.section_1_body,
+            },
+            {
+              title: homePage?.section_2_title,
+              body: homePage?.section_2_body,
+            },
+            {
+              title: homePage?.section_3_title,
+              body: homePage?.section_3_body,
+            },
+          ]
+            .filter((item) => item.title || item.body)
+            .map((item, index) => (
+              <div
+                key={index}
+                className="rounded-[32px] border border-slate-200 bg-[#fbfbfd] p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                {item.title && (
+                  <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                    {item.title}
+                  </h3>
+                )}
 
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-semibold">
-              {homePage?.section_2_title}
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {homePage?.section_2_body}
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-semibold">
-              {homePage?.section_3_title}
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {homePage?.section_3_body}
-            </p>
-          </div>
+                {item.body && (
+                  <p className="mt-4 text-sm leading-7 text-slate-600">
+                    {item.body}
+                  </p>
+                )}
+              </div>
+            ))}
         </div>
       </section>
 
