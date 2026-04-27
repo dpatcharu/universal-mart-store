@@ -43,6 +43,7 @@ type SitePage = {
   section_2_title?: string | null;
   section_2_body?: string | null;
   section_3_title?: string | null;
+  section_3_body?: string | null;
 };
 
 export default async function Home() {
